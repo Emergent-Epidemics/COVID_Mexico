@@ -37,3 +37,6 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+#Large data file
+/Data/200721COVID19MEXICO2.csv
