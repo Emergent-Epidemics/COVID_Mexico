@@ -114,18 +114,19 @@ mobs <- unlist(lapply(mobility_from_df, function(x) x))
 #######
 dat.plot <- data.frame(rates, times, prov, mobs)
 dat.plot$time_fact <- as.factor(dat.plot$times)
+dat.plot$times <- as.numeric(times-mean(times), unit = "days")
 dat.plot$prov <- as.factor(dat.plot$prov)
 
-mod <- lm(rates ~ log(mobs)+time_fact, data = dat.plot)
+mod <- lm(rates ~ log(mobs)*time_fact, data = dat.plot)
 summary(mod)
 
-mod.plot <- lmer(rates ~ log(mobs) + (log(mobs)|time_fact) + (log(mobs)|prov), data = dat.plot)
+mod.plot <- lmer(rates ~ log(mobs) + (log(mobs)|prov) + (times|prov) + (log(mobs)|time_fact), data = dat.plot)
 
 ran_coef <- ranef(mod.plot)$time_fact
 min.coef <- min(ranef(mod.plot)$prov)
 max.coef <- max(ranef(mod.plot)$prov)
 dates_coef <- as.POSIXct(strptime(rownames(ran_coef), format = "%Y-%m-%d"))
-week_ef <- ran_coef$`log(mobs)`+fixef(mod.plot)[2]
+week_ef <- ran_coef$`log(mobs)`+ fixef(mod.plot)[2]
 
 plot(dates_coef, week_ef, type = "l", bty = "n", xlab = "2020", ylab = "Growth rate and mobility coefficient", main = "COVID-19 Growth Rate (Municipality) & Mobility from DF", lwd = 3, ylim = c(min(week_ef + min.coef), max(week_ef + max.coef)))
 points(dates_coef, week_ef + min.coef, type = "l", lwd = 1, lty = 5)
