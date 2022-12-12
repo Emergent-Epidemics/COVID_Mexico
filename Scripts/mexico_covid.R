@@ -12,6 +12,8 @@ library(tidyr)
 library(wesanderson)
 library(rgdal)
 library(glmulti)
+library(MuMIn)
+library(lmerTest)
 
 #########
 #Globals#
@@ -123,16 +125,20 @@ dat.plot$time_fact <- as.factor(dat.plot$times)
 dat.plot$times <- as.numeric(times-mean(times), unit = "days")
 dat.plot$prov <- as.factor(dat.plot$prov)
 
-mod <- lm(rates ~ log(mobs)+time_fact, data = dat.plot)
+mod <- lm(rates ~ time_fact + prov, data = dat.plot)
 summary(mod)
 
-mod.plot <- lmer(rates ~ log10(mobs) + (log10(mobs)|prov) + (times|prov) + (log10(mobs)|time_fact), data = dat.plot)
+mod.plot <- lmer(rates ~ log10(mobs) + (1|prov) + (log10(mobs)|time_fact), data = dat.plot)
+mod.plot.2 <- lmer(rates ~ log10(mobs) + (1|prov) + (1|time_fact), data = dat.plot)
 
+anova(mod.plot,mod.plot.2)
+
+r2 <- r.squaredGLMM(mod.plot)
 ran_coef <- ranef(mod.plot)$time_fact
 min.coef <- min(ranef(mod.plot)$prov)
 max.coef <- max(ranef(mod.plot)$prov)
 dates_coef <- as.POSIXct(strptime(rownames(ran_coef), format = "%Y-%m-%d"))
-week_ef <- ran_coef$`log(mobs)`+ fixef(mod.plot)[2]
+week_ef <- ran_coef$`log10(mobs)`+ fixef(mod.plot)[2]
 
 if(save_output == TRUE){
   file.out <- data.frame(dates_coef, week_ef)
@@ -153,3 +159,4 @@ if(do_plots == TRUE){
   quartz(width = 8, height = 6)
   ggplot(dat.plot, (aes(x = log(mobs), y = rates, color = times, group = time_fact))) + geom_point() + xlab("Mobility from Mexico City") + ylab("COVID19 growth rate (Municipality-level)") + theme(legend.position = "right", legend.key = element_rect(fill = "#f0f0f0"), legend.background = element_rect(fill = "#ffffffaa", colour = "black"), panel.background = element_rect(fill = "white", colour = "black"), axis.text.y = element_text(colour = "black", size = 14), axis.text.x = element_text(colour = "black", size = 10), axis.title = element_text(colour = "black", size = 16), panel.grid.minor = element_line(colour = "#00000000",linetype = 3), panel.grid.major = element_line(colour = "#00000000", linetype = 3)) + scale_y_continuous(expand = c(0.01,0.01)) + labs(color = "Week") + ggtitle("COVID-19 Growth Rate and Mobility from Mexico City") + geom_smooth(method = "lm")
 }
+
