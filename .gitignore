@@ -39,4 +39,4 @@ vignettes/*.pdf
 .Renviron
 
 #Large data file
-/Data/200721COVID19MEXICO2.csv
+/Data/*

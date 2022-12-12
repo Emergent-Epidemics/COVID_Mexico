@@ -12,31 +12,41 @@ library(tidyr)
 library(wesanderson)
 library(rgdal)
 library(glmulti)
-#devtools::install_github("alberto-mateos-mo/datoscovid19mx")
-#library(datoscovid19mx)
+
+#########
+#Globals#
+#########
+lag <- 1 #the dates object is weekly, so this is lag in weeks
+mob_lag <- 1 #how far back to for mexico mobility
+start_i <- max(c(lag, mob_lag))
+
+save_output <- FALSE
+do_plots <- FALSE
+
+timestamp <- as.numeric(Sys.time())
 
 ######
 #Data#
 ######
-cases <- read.csv("~/Dropbox/demographic_transitions/200811COVID19MEXICO.csv")
+cases <- read.csv("../Data/200721COVID19MEXICO 2.csv")
 cases$FECHA_SINTOMAS <- as.POSIXct(strptime(cases$FECHA_SINTOMAS, format = "%Y-%m-%d"))
 cases$New <- rep(1, nrow(cases))
 
 #add in state name
-states_cases <- read.csv("~/Dropbox/demographic_transitions/diccionario_datos_covid19/Catalogos_0412_entidades.csv")
+states_cases <- read.csv("../Data/diccionario_datos_covid19/Catalogos_0412_entidades.csv")
 mt_state <- match(cases$ENTIDAD_RES, states_cases$CLAVE_ENTIDAD)
 length(which(is.na(mt_state) == TRUE))
 cases$state <- states_cases$ENTIDAD_FEDERATIVA[mt_state]
 
 #add in municipio name
-muni_cases <- read.csv("~/Dropbox/demographic_transitions/diccionario_datos_covid19/Catalogos_0412_municipios.csv")
+muni_cases <- read.csv("../Data/diccionario_datos_covid19/Catalogos_0412_municipios.csv")
 muni_cases$full_muni_id <- paste0(muni_cases$CLAVE_ENTIDAD, muni_cases$CLAVE_MUNICIPIO)
 cases$full_muni_id <- paste0(cases$ENTIDAD_RES, cases$MUNICIPIO_RES)
 mt_muni <- match(cases$full_muni_id, muni_cases$full_muni_id)
 length(which(is.na(mt_muni) == TRUE))
 cases$muni <- muni_cases$MUNICIPIO[mt_muni]
 
-mobility <- read.csv("~/Dropbox/demographic_transitions/movement/mexico_november_august_municipality.csv")
+mobility <- read.csv("../Data/movement/mexico_november_august_municipality.csv")
 mobility$week_start <- as.POSIXct(strptime(mobility$week_start, format = "%d/%m/%Y"))
 mobility$full_muni_id <- paste0(mobility$destination_state, mobility$destination_municipality)
 
@@ -62,10 +72,6 @@ by_dat_mat_df$Date <- as.POSIXct(by_dat_mat_df$Date)
 
 diff.df <- by_dat_mat_df %>% gather(location, cases, 1:(ncol(by_dat_mat_df)-1)) #last column is the date
 colnames(diff.df) <- c("Date", "County", "New")
-
-lag <- 1 #the dates object is weekly, so this is lag in weeks
-mob_lag <- 2 #how far back to for mexico mobility
-start_i <- max(c(lag, mob_lag))
 
 doubling_prov <- list()
 doubling_fixed <- list()
@@ -109,18 +115,18 @@ prov <- unlist(lapply(doubling_prov, function(x) names(x)))
 times <- rep(dates[(lag+1):(length(dates))], times = unlist(lapply(doubling_prov, function(x) length(x))))
 mobs <- unlist(lapply(mobility_from_df, function(x) x))
 
-#######
-#Plots#
-#######
+########
+#Models#
+########
 dat.plot <- data.frame(rates, times, prov, mobs)
 dat.plot$time_fact <- as.factor(dat.plot$times)
 dat.plot$times <- as.numeric(times-mean(times), unit = "days")
 dat.plot$prov <- as.factor(dat.plot$prov)
 
-mod <- lm(rates ~ log(mobs)*time_fact, data = dat.plot)
+mod <- lm(rates ~ log(mobs)+time_fact, data = dat.plot)
 summary(mod)
 
-mod.plot <- lmer(rates ~ log(mobs) + (log(mobs)|prov) + (times|prov) + (log(mobs)|time_fact), data = dat.plot)
+mod.plot <- lmer(rates ~ log10(mobs) + (log10(mobs)|prov) + (times|prov) + (log10(mobs)|time_fact), data = dat.plot)
 
 ran_coef <- ranef(mod.plot)$time_fact
 min.coef <- min(ranef(mod.plot)$prov)
@@ -128,12 +134,22 @@ max.coef <- max(ranef(mod.plot)$prov)
 dates_coef <- as.POSIXct(strptime(rownames(ran_coef), format = "%Y-%m-%d"))
 week_ef <- ran_coef$`log(mobs)`+ fixef(mod.plot)[2]
 
-plot(dates_coef, week_ef, type = "l", bty = "n", xlab = "2020", ylab = "Growth rate and mobility coefficient", main = "COVID-19 Growth Rate (Municipality) & Mobility from DF", lwd = 3, ylim = c(min(week_ef + min.coef), max(week_ef + max.coef)))
-points(dates_coef, week_ef + min.coef, type = "l", lwd = 1, lty = 5)
-points(dates_coef, week_ef + max.coef, type = "l", lwd = 1, lty = 5)
-abline(h = 0, lty = 3, lwd = 3, col = "#b2182b")
-
-cols <- sample(wes_palette(name = "Zissou1", n = length(unique(dat.plot$times)), type = "continuous"), length(unique(dat.plot$times)))
-
-quartz(width = 8, height = 6)
-ggplot(dat.plot, (aes(x = log(mobs), y = rates, color = times, group = time_fact))) + geom_point() + xlab("Mobility from Mexico City") + ylab("COVID19 growth rate (Municipality-level)") + theme(legend.position = "right", legend.key = element_rect(fill = "#f0f0f0"), legend.background = element_rect(fill = "#ffffffaa", colour = "black"), panel.background = element_rect(fill = "white", colour = "black"), axis.text.y = element_text(colour = "black", size = 14), axis.text.x = element_text(colour = "black", size = 10), axis.title = element_text(colour = "black", size = 16), panel.grid.minor = element_line(colour = "#00000000",linetype = 3), panel.grid.major = element_line(colour = "#00000000", linetype = 3)) + scale_y_continuous(expand = c(0.01,0.01)) + labs(color = "Week") + ggtitle("COVID-19 Growth Rate and Mobility from Mexico City") + geom_smooth(method = "lm")
+if(save_output == TRUE){
+  file.out <- data.frame(dates_coef, week_ef)
+  colnames(file.out) <- c("Week", "Coefficient")
+  write.csv(file.out, file = paste0("../Output/", timestamp, "_figure2c.csv"), row.names = FALSE, quote = FALSE)
+}
+#######
+#Plots#
+#######
+if(do_plots == TRUE){
+  plot(dates_coef, week_ef, type = "l", bty = "n", xlab = "2020", ylab = "Growth rate and mobility coefficient", main = "COVID-19 Growth Rate (Municipality) & Mobility from DF", lwd = 3, ylim = c(min(week_ef + min.coef), max(week_ef + max.coef)))
+  points(dates_coef, week_ef + min.coef, type = "l", lwd = 1, lty = 5)
+  points(dates_coef, week_ef + max.coef, type = "l", lwd = 1, lty = 5)
+  abline(h = 0, lty = 3, lwd = 3, col = "#b2182b")
+  
+  cols <- sample(wes_palette(name = "Zissou1", n = length(unique(dat.plot$times)), type = "continuous"), length(unique(dat.plot$times)))
+  
+  quartz(width = 8, height = 6)
+  ggplot(dat.plot, (aes(x = log(mobs), y = rates, color = times, group = time_fact))) + geom_point() + xlab("Mobility from Mexico City") + ylab("COVID19 growth rate (Municipality-level)") + theme(legend.position = "right", legend.key = element_rect(fill = "#f0f0f0"), legend.background = element_rect(fill = "#ffffffaa", colour = "black"), panel.background = element_rect(fill = "white", colour = "black"), axis.text.y = element_text(colour = "black", size = 14), axis.text.x = element_text(colour = "black", size = 10), axis.title = element_text(colour = "black", size = 16), panel.grid.minor = element_line(colour = "#00000000",linetype = 3), panel.grid.major = element_line(colour = "#00000000", linetype = 3)) + scale_y_continuous(expand = c(0.01,0.01)) + labs(color = "Week") + ggtitle("COVID-19 Growth Rate and Mobility from Mexico City") + geom_smooth(method = "lm")
+}
