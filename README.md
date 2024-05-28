@@ -1,5 +1,22 @@
 # Spatial scales of COVID-19 transmission in Mexico
-Here we use weekly anonymized and aggregated human mobility data and spatially highly resolved data on COVID-19 cases, deaths and hospitalizations at the municipality level in Mexico to investigate how behavioural changes in response to the pandemic have altered the spatial scales of transmission and interventions during its first wave (March - June 2020). We find that the epidemic dynamics in Mexico were initially driven by SARS-CoV-2 exports from Mexico State and Mexico City, where early outbreaks occurred. The mobility network shifted after the implementation of interventions in late March 2020 and movement communities became more disjointed while epidemics in these communities became increasingly synchronised. Our results provide actionable and dynamic insights into how to use network science and epidemiological modelling to inform the spatial scale at which interventions are most impactful in mitigating the spread of COVID-19 and infectious diseases in general.
+During outbreaks of emerging infectious diseases, internationally connected cities
+often experience large and early outbreaks, while rural regions follow after some delay. This hierarchical structure of disease spread is influenced primarily by the mul-
+tiscale structure of human mobility. However, during the COVID-19 epidemic,
+public health responses typically did not take into consideration the explicit spatial
+structure of human mobility when designing non-pharmaceutical interventions (NPIs).
+NPIs were applied primarily at national or regional scales [10]. Here we use weekly
+anonymized and aggregated human mobility data and spatially highly resolved data
+on COVID-19 cases at the municipality level in Mexico to investigate how behavioural
+changes in response to the pandemic have altered the spatial scales of transmission and
+interventions during its first wave (March - June 2020). We find that the epidemic
+dynamics in Mexico were initially driven by SARS-CoV-2 exports from Mexico State
+and Mexico City, where early outbreaks occurred. The mobility network shifted af-
+ter the implementation of interventions in late March 2020, and the mobility network
+communities became more disjointed while epidemics in these communities became in-
+creasingly synchronised. Our results provide dynamic insights into how to use network
+science and epidemiological modelling to inform the spatial scale at which interventions
+are most impactful in mitigating the spread of COVID-19 and infectious diseases in
+general.
 
 ### Citation
 N/A
