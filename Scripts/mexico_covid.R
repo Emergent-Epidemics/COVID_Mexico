@@ -14,6 +14,7 @@ library(rgdal)
 library(glmulti)
 library(MuMIn)
 library(lmerTest)
+library(equatiomatic) #remotes::install_github("datalorax/equatiomatic")
 
 #########
 #Globals#
@@ -84,7 +85,7 @@ for(i in (start_i+1):length(dates)){
   data.i <- diff.df[use.i, ]
   
   data.i$DATE <- as.numeric(data.i$Date - dates[i-1], unit = "days")
-  mod3.i <- try(lmer(data = data.i, log(New + 1) ~ DATE + (DATE|County)), silent = TRUE)
+  mod3.i <- try(lmer(data = data.i, log(New + 1) ~ DATE + (DATE|County)), silent = TRUE) #county here == municipality
   
   if(is(mod3.i)[1] == "try-error"){
     fixed.i <- NA
@@ -92,6 +93,7 @@ for(i in (start_i+1):length(dates)){
     mob.i <- NA
     names.i <- NA
   }else{
+    tex_mod_rates <- extract_eq(mod3.i) #just saving one of these for the TeX code
     fixed.i <-   fixef(mod3.i)["DATE"]
     doubling.i <- ranef(mod3.i)$County$DATE+fixed.i
     names.i <- rownames(ranef(mod3.i)$County)
@@ -125,14 +127,17 @@ dat.plot$time_fact <- as.factor(dat.plot$times)
 dat.plot$times <- as.numeric(times-mean(times), unit = "days")
 dat.plot$prov <- as.factor(dat.plot$prov)
 
-mod <- lm(rates ~ time_fact + prov, data = dat.plot)
+#LM for municipality growth rates (not used)
+mod <- lm(rates ~ prov + time_fact, data = dat.plot)
 summary(mod)
 
+#GLM for effect of mobility from Mexico City on municipality growth rates
 mod.plot <- lmer(rates ~ log10(mobs) + (1|prov) + (log10(mobs)|time_fact), data = dat.plot)
 mod.plot.2 <- lmer(rates ~ log10(mobs) + (1|prov) + (1|time_fact), data = dat.plot)
 
 anova(mod.plot,mod.plot.2)
 
+tex_mod_lmer <- extract_eq(mod.plot)
 r2 <- r.squaredGLMM(mod.plot)
 ran_coef <- ranef(mod.plot)$time_fact
 min.coef <- min(ranef(mod.plot)$prov)

@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 #Large data file
 /Data/*
+
+#R DS_Store
+.DS_Store
