@@ -6,6 +6,8 @@ Klein, B.$, Hartle, H., Shrestha, M., Zenteno, A.C., Cordera, D.B.S., Nicolas-Ca
 
 $Correspondence should be addressed to b.klein@northeastern.edu (B.K.); alberto_diaz@uaeh.edu.mx (A. R-S.); s.scarpino@northeastern.edu (S.V.S.); moritz.kraemer@zoo.ox.ac.uk (M.U.G.K.).
 
+Manuscript submission version of the code and data can be accessed via Zenodo: [![DOI](https://zenodo.org/badge/283283046.svg)](https://zenodo.org/doi/10.5281/zenodo.11372046)
+
 ### Data Availability
 1. Currently, all files in "Data" must be obtained from the authors.
 
